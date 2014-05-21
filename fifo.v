@@ -57,20 +57,20 @@ module test;
   end
 endmodule
 
-module FIFO(CLK, RST_X, ENQ, DEQ, DIN, DOUT, EMPTY, FULL);
+module FIFO(input wire             CLK, 
+		  input wire             RST_X, 
+		  input wire             ENQ, 
+		  input wire             DEQ, 
+		  input wire [WIDTH-1:0] DIN, 
+		  output reg [WIDTH-1:0] DOUT, 
+		  output wire            EMPTY, 
+		  output wire            FULL);
+  
   parameter WIDTH = 32; // data width
   parameter DEPTH = 4;  // fifo depth
   parameter W_CNT = 3;  // counter width
   parameter W_POS = 2;  // pointer width for DEPTH
   
-  input                  CLK;
-  input                  RST_X;
-  input                  ENQ;
-  input                  DEQ;
-  input      [WIDTH-1:0] DIN;  
-  output reg [WIDTH-1:0] DOUT;
-  output                 EMPTY;
-  output                 FULL;
 
   reg [WIDTH-1:0] mem[DEPTH-1:0];
   reg [W_CNT-1:0] cnt;
