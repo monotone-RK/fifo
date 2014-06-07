@@ -1,13 +1,14 @@
 `timescale 1ns / 1ps
 `default_nettype none
   
-`define CLKIN_HALF_PERIOD 5    //100MHz input clock
+`define CLKIN_HALF_PERIOD 5    // 100MHz input clock
 `define RESET_TIME        1000
 `define WIDTH             32   // data width
 `define DEPTH             5    // fifo depth
 `define W_CNT             3    // counter width
 `define W_POS             3    // pointer width for DEPTH
 `define HALT_CYCLE        30
+  
 module test;
   parameter VCD = "uut.vcd";
     
@@ -57,22 +58,21 @@ module test;
   end
 endmodule
 
-module FIFO(CLK, RST_X, ENQ, DEQ, DIN, DOUT, EMPTY, FULL);
+module FIFO(input  wire             CLK, 
+            input  wire             RST_X, 
+            input  wire             ENQ, 
+            input  wire             DEQ, 
+            input  wire [WIDTH-1:0] DIN, 
+            output  reg [WIDTH-1:0] DOUT, 
+            output wire             EMPTY, 
+            output wire             FULL);
+  
   parameter WIDTH = 32; // data width
   parameter DEPTH = 4;  // fifo depth
   parameter W_CNT = 3;  // counter width
   parameter W_POS = 2;  // pointer width for DEPTH
   
-  input                  CLK;
-  input                  RST_X;
-  input                  ENQ;
-  input                  DEQ;
-  input      [WIDTH-1:0] DIN;  
-  output reg [WIDTH-1:0] DOUT;
-  output                 EMPTY;
-  output                 FULL;
-
-  reg [WIDTH-1:0] mem[DEPTH-1:0];
+  reg [WIDTH-1:0] mem [DEPTH-1:0];
   reg [W_CNT-1:0] cnt;
   reg [W_POS-1:0] head;
   reg [W_POS-1:0] tail;
@@ -89,11 +89,11 @@ module FIFO(CLK, RST_X, ENQ, DEQ, DIN, DOUT, EMPTY, FULL);
     end else begin
 	 if (ENQ && !FULL) begin  
 	   mem[tail] <= DIN;
-	   tail      <= (tail+1) % DEPTH;
+	   tail      <= (tail == DEPTH-1) ? 0 : tail+1;
 	 end
 	 if (DEQ && !EMPTY) begin 
 	   DOUT <= mem[head];
-	   head <= (head+1) % DEPTH;
+	   head <= (head == DEPTH-1) ? 0 : head+1;
 	 end else begin
 	   DOUT <= 0;
 	 end
