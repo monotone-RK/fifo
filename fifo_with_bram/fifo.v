@@ -89,9 +89,9 @@ module FIFO #(parameter               WIDTH = 32, // data width
 
   always @(posedge CLK) begin
     if (!RST_X) begin
-      cnt    <= 0;
-      head   <= 0;
-      tail   <= 0;
+      cnt     <= 0;
+      head    <= 0;
+      tail    <= 0;
       dout_en <= 0;
     end else begin
       if (we) tail <= (tail == DEPTH-1) ? 0 : tail+1;
