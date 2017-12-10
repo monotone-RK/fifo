@@ -39,6 +39,69 @@ module BFIFO #(parameter                    FIFO_SIZE  =  4,  // size in log sca
 endmodule
 
 
+/*****  A multi-channel FIFO                                              *****/
+/******************************************************************************/
+module MULTI_CHANNEL_FIFO #(parameter                    C_LOG      = 2,  // # of channels in log scale
+                            parameter                    FIFO_SIZE  = 2,  // FIFO depth of each channel in log scale
+                            parameter                    FIFO_WIDTH = 32)
+                           (input  wire                  CLK,
+                            input  wire                  RST,
+                            input  wire                  enq,
+                            input  wire [C_LOG-1:0]      enq_idx,
+                            input  wire                  deq,
+                            input  wire [C_LOG-1:0]      deq_idx,
+                            input  wire [FIFO_WIDTH-1:0] din,
+                            output reg  [FIFO_WIDTH-1:0] dot,
+                            output wire [(1<<C_LOG)-1:0] emp,
+                            output wire [(1<<C_LOG)-1:0] full);
+
+  // FIFO_SIZE-1 -> FIFO_SIZE (to generate emp and full)
+  reg [FIFO_SIZE:0] head_list [(1<<C_LOG)-1:0];
+  reg [FIFO_SIZE:0] tail_list [(1<<C_LOG)-1:0];
+
+  reg [FIFO_WIDTH-1:0] mem [(1<<(C_LOG+FIFO_SIZE))-1:0];
+     
+  genvar i;
+  generate
+    for (i=0; i<(1<<C_LOG); i=i+1) begin: channels
+      assign emp[i]  = (head_list[i] == tail_list[i]);
+      assign full[i] = (head_list[i] == {~tail_list[i][FIFO_SIZE], tail_list[i][FIFO_SIZE-1:0]});
+    end
+  endgenerate
+  
+  wire [(C_LOG+FIFO_SIZE)-1:0] raddr = {deq_idx, head_list[deq_idx][FIFO_SIZE-1:0]};
+  wire [(C_LOG+FIFO_SIZE)-1:0] waddr = {enq_idx, tail_list[enq_idx][FIFO_SIZE-1:0]};
+  
+  always @(posedge CLK) dot <= mem[raddr];
+
+  integer p;
+  always @(posedge CLK) begin
+    if (RST) begin
+      for (p=0; p<(1<<C_LOG); p=p+1) begin
+        head_list[p] <= 0; 
+        tail_list[p] <= 0;
+      end
+    end else begin
+      case ({enq, deq})
+        2'b01: begin 
+          head_list[deq_idx] <= head_list[deq_idx] + 1;
+        end
+        2'b10: begin 
+          mem[waddr]         <= din;
+          tail_list[enq_idx] <= tail_list[enq_idx] + 1; 
+        end
+        2'b11: begin 
+          mem[waddr]         <= din; 
+          head_list[deq_idx] <= head_list[deq_idx] + 1; 
+          tail_list[enq_idx] <= tail_list[enq_idx] + 1; 
+        end
+      endcase
+    end
+  end
+  
+endmodule
+  
+
 /***** A Distributed RAM-based FIFO                                       *****/
 /******************************************************************************/
 module DFIFO #(parameter                    FIFO_SIZE  =  4,  // size in log scale, 4 for 16 entry
